@@ -137,7 +137,42 @@ module SalesforceBulkApi
         puts e.backtrace
       end
     end
-    
+
+    def get_batches_in_job(jid)
+      path = "job/#{jid}/batch"
+      headers = Hash.new
+      response = @connection.get_request(nil, path, headers)
+
+      begin
+        response_parsed = XmlSimple.xml_in(response) if response
+        response_parsed
+      rescue StandardError => e
+        puts "Error parsing XML response for #{jid}"
+        puts e
+        puts e.backtrace
+      end
+    end
+
+    def get_batch_result_in_job(jid, bid)
+      path = "job/#{jid}/batch/#{bid}/result"
+      headers = Hash["Content-Type" => "application/xml; charset=UTF-8"]
+
+      response = @connection.get_request(nil, path, headers)
+      response_parsed = XmlSimple.xml_in(response)
+      results = response_parsed['result'] unless @operation == 'query'
+
+      if(@operation == 'query') # The query op requires us to do another request to get the results
+        result_id = response_parsed["result"][0]
+        path = "job/#{jid}/batch/#{bid}/result/#{result_id}"
+        headers = Hash.new
+        headers = Hash["Content-Type" => "application/xml; charset=UTF-8"]
+        response = @connection.get_request(nil, path, headers)
+        response_parsed = XmlSimple.xml_in(response)
+        results = response_parsed['records']
+      end
+      results
+    end
+
     def check_batch_status(batch_id)
       path = "job/#{@job_id}/batch/#{batch_id}"
       headers = Hash.new
@@ -156,7 +191,6 @@ module SalesforceBulkApi
     
     def get_job_result(return_result, timeout)
       # timeout is in seconds
-      puts "\n\nGet ob result called.\n\n"
       begin
         state = []
         Timeout::timeout(timeout, SalesforceBulkApi::JobTimeout) do

@@ -39,11 +39,21 @@ module SalesforceBulkApi
     end
 
     def get_job_status(job_id)
-
+      job = SalesforceBulkApi::Job.new("NA", "NA", [], nil, @connection)
+      return job.get_status(job_id)
     end
 
-    #private
+    def get_batches_in_job(job_id)
+      job = SalesforceBulkApi::Job.new("NA", "NA", [], nil, @connection)
+      return job.get_batches_in_job(job_id)
+    end
 
+    def get_batch_result_in_job(job_id, batch_id)
+      job = SalesforceBulkApi::Job.new("NA", "NA", [], nil, @connection)
+      return job.get_batch_result_in_job(job_id, batch_id)
+    end
+   
+    #private
     def do_operation(operation, sobject, records, external_field, get_response, timeout, batch_size, send_nulls = false, no_null_list = [])
       job = SalesforceBulkApi::Job.new(operation, sobject, records, external_field, @connection)
 
