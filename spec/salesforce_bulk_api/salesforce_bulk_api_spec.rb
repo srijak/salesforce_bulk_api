@@ -10,34 +10,37 @@ describe SalesforceBulkApi do
                                             :client_secret => auth_hash['salesforce']['client_secret'])
     @sf_client.authenticate(:username => auth_hash['salesforce']['user'], :password => auth_hash['salesforce']['passwordandtoken'])
     @api = SalesforceBulkApi::Api.new(@sf_client)
+
+    @acct_id = "001i000000OYdEc"
   end
 
   describe 'upsert' do
     
     context 'when not passed get_result' do
       it "doesn't return the batches array" do
-        res = @api.upsert('Account', [{:Id => '0013000000ymMBh', :Website => 'www.test.com'}], 'Id')
+        res = @api.upsert('Account', [{:Id => @acct_id, :Website => 'www.test.com'}], 'Id')
         res['batches'].should be_nil
       end
     end
     
     context 'when passed get_result = true' do
       it 'returns the batches array' do
-        res = @api.upsert('Account', [{:Id => '0013000000ymMBh', :Website => 'www.test.com'}], 'Id', true)
+        res = @api.upsert('Account', [{:Id => @acct_id, :Website => 'www.test.com'}], 'Id', true)
         res['batches'][0]['response'].is_a? Array
-        res['batches'][0]['response'][0].should eq({'id'=>['0013000000ymMBhAAM'], 'success'=>['true'], 'created'=>['false']})
+        res['batches'][0]['response'][0]['success'].should eq(["true"])
+        res['batches'][0]['response'][0]['created'].should eq(["false"])
       end
     end
     
     context 'when passed send_nulls = true' do
       it 'sets the nil and empty attributes to NULL' do
-        @api.update('Account', [{:Id => '0013000000ymMBh', :Website => 'abc123', :Other_Phone__c => '5678', :Gold_Star__c => true}], true)
-        res = @api.query('Account', "SELECT Website, Other_Phone__c From Account WHERE Id = '0013000000ymMBh'")
+        @api.update('Account', [{:Id => @acct_id, :Website => 'abc123', :Other_Phone__c => '5678', :Gold_Star__c => true}], true)
+        res = @api.query('Account', "SELECT Website, Other_Phone__c From Account WHERE Id = '#{@acct_id}'")
         res['batches'][0]['response'][0]['Website'][0].should eq 'abc123'
         res['batches'][0]['response'][0]['Other_Phone__c'][0].should eq '5678'
-        res = @api.upsert('Account', [{:Id => '0013000000ymMBh', :Website => '', :Other_Phone__c => nil, :Gold_Star__c => false, :CRM_Last_Modified__c => nil}], 'Id', true, true)
-        res['batches'][0]['response'][0].should eq({'id'=>['0013000000ymMBhAAM'], 'success'=>['true'], 'created'=>['false']})
-        res = @api.query('Account', "SELECT Website, Other_Phone__c, Gold_Star__c, CRM_Last_Modified__c From Account WHERE Id = '0013000000ymMBh'")
+        res = @api.upsert('Account', [{:Id => @acct_id, :Website => '', :Other_Phone__c => nil, :Gold_Star__c => false, :CRM_Last_Modified__c => nil}], 'Id', true, true)
+        res['batches'][0]['response'][0].should eq({'id'=>[@acct_id], 'success'=>['true'], 'created'=>['false']})
+        res = @api.query('Account', "SELECT Website, Other_Phone__c, Gold_Star__c, CRM_Last_Modified__c From Account WHERE Id = '#{@acct_id}'")
         res['batches'][0]['response'][0]['Website'][0].should eq({"xsi:nil" => "true"})
         res['batches'][0]['response'][0]['Other_Phone__c'][0].should eq({"xsi:nil" => "true"})
         res['batches'][0]['response'][0]['Gold_Star__c'][0].should eq('false')
@@ -47,13 +50,13 @@ describe SalesforceBulkApi do
     
     context 'when passed send_nulls = true and an array of fields not to null' do
       it 'sets the nil and empty attributes to NULL, except for those included in the list of fields to ignore' do
-        @api.update('Account', [{:Id => '0013000000ymMBh', :Website => 'abc123', :Other_Phone__c => '5678', :Gold_Star__c => true}], true)
-        res = @api.query('Account', "SELECT Website, Other_Phone__c From Account WHERE Id = '0013000000ymMBh'")
+        @api.update('Account', [{:Id => @acct_id, :Website => 'abc123', :Other_Phone__c => '5678', :Gold_Star__c => true}], true)
+        res = @api.query('Account', "SELECT Website, Other_Phone__c From Account WHERE Id = '#{@acct_id}'")
         res['batches'][0]['response'][0]['Website'][0].should eq 'abc123'
         res['batches'][0]['response'][0]['Other_Phone__c'][0].should eq '5678'
-        res = @api.upsert('Account', [{:Id => '0013000000ymMBh', :Website => '', :Other_Phone__c => nil, :Gold_Star__c => false, :CRM_Last_Modified__c => nil}], 'Id', true, true, [:Website, :Other_Phone__c])
-        res['batches'][0]['response'][0].should eq({'id'=>['0013000000ymMBhAAM'], 'success'=>['true'], 'created'=>['false']})
-        res = @api.query('Account', "SELECT Website, Other_Phone__c, Gold_Star__c, CRM_Last_Modified__c From Account WHERE Id = '0013000000ymMBh'")
+        res = @api.upsert('Account', [{:Id => @acct_id, :Website => '', :Other_Phone__c => nil, :Gold_Star__c => false, :CRM_Last_Modified__c => nil}], 'Id', true, true, [:Website, :Other_Phone__c])
+        res['batches'][0]['response'][0].should eq({'id'=>[@acct_id], 'success'=>['true'], 'created'=>['false']})
+        res = @api.query('Account', "SELECT Website, Other_Phone__c, Gold_Star__c, CRM_Last_Modified__c From Account WHERE Id = '#{@acct_id}'")
         res['batches'][0]['response'][0]['Website'][0].should eq('abc123')
         res['batches'][0]['response'][0]['Other_Phone__c'][0].should eq('5678')
         res['batches'][0]['response'][0]['Gold_Star__c'][0].should eq('false')
@@ -67,16 +70,17 @@ describe SalesforceBulkApi do
     context 'when there is not an error' do
       context 'when not passed get_result' do
         it "doesnt return the batches array" do
-          res = @api.update('Account', [{:Id => '0013000000ymMBh', :Website => 'www.test.com'}])
+          res = @api.update('Account', [{:Id => @acct_id, :Website => 'www.test.com'}])
           res['batches'].should be_nil
         end
       end
   
       context 'when passed get_result = true' do
         it 'returns the batches array' do
-          res = @api.update('Account', [{:Id => '0013000000ymMBh', :Website => 'www.test.com'}], true)
+          res = @api.update('Account', [{:Id => @acct_id, :Website => 'www.test.com'}], true)
           res['batches'][0]['response'].is_a? Array
-          res['batches'][0]['response'][0].should eq({'id'=>['0013000000ymMBhAAM'], 'success'=>['true'], 'created'=>['false']})
+          res['batches'][0]['response'][0]['success'].should eq(["true"])
+          res['batches'][0]['response'][0]['created'].should eq(["false"])
         end
       end
     end
@@ -84,14 +88,14 @@ describe SalesforceBulkApi do
     context 'when there is an error' do
       context 'when not passed get_result' do
         it "doesn't return the results array" do
-          res = @api.update('Account', [{:Id => '0013000000ymMBh', :Website => 'www.test.com'},{:Id => 'abc123', :Website => 'www.test.com'}])
+          res = @api.update('Account', [{:Id => @acct_id, :Website => 'www.test.com'},{:Id => 'abc123', :Website => 'www.test.com'}])
           res['batches'].should be_nil
         end
       end
   
       context 'when passed get_result = true with batches' do
         it 'returns the results array' do
-          res = @api.update('Account', [{:Id => '0013000000ymMBh', :Website => 'www.test.com'}, {:Id => '0013000000ymMBh', :Website => 'www.test.com'}, {:Id => '0013000000ymMBh', :Website => 'www.test.com'}, {:Id => 'abc123', :Website => 'www.test.com'}], true, false, [], 2)
+          res = @api.update('Account', [{:Id => @acct_id, :Website => 'www.test.com'}, {:Id => '0013000000ymMBh', :Website => 'www.test.com'}, {:Id => '0013000000ymMBh', :Website => 'www.test.com'}, {:Id => 'abc123', :Website => 'www.test.com'}], true, false, [], 2)
           res['batches'][0]['response'].should eq([{"id"=>["0013000000ymMBhAAM"], "success"=>["true"], "created"=>["false"]}, {"errors"=>[{"fields"=>["Id"], "message"=>["Account ID: id value of incorrect type: abc123"], "statusCode"=>["MALFORMED_ID"]}], "success"=>["false"], "created"=>["false"]}])
           res['batches'][1]['response'].should eq([{"id"=>["0013000000ymMBhAAM"], "success"=>["true"], "created"=>["false"]},{"id"=>["0013000000ymMBhAAM"], "success"=>["true"], "created"=>["false"]}])
         end

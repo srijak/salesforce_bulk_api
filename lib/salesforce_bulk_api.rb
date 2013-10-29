@@ -38,6 +38,10 @@ module SalesforceBulkApi
       self.do_operation('query', sobject, query, nil, true, timeout, batch_size)
     end
 
+    def get_job_status(job_id)
+
+    end
+
     #private
 
     def do_operation(operation, sobject, records, external_field, get_response, timeout, batch_size, send_nulls = false, no_null_list = [])

@@ -29,7 +29,10 @@ module SalesforceBulkApi
       path = "job"
       headers = Hash['Content-Type' => 'application/xml; charset=utf-8']
 
+      puts "Posting \n\n #{xml} \n\n"
       response = @connection.post_xml(nil, path, xml, headers)
+      puts "Response: \n\n #{response} \n\n"
+
       response_parsed = XmlSimple.xml_in(response)
       @job_id = response_parsed['id'][0]
     end
@@ -119,6 +122,21 @@ module SalesforceBulkApi
         puts e.backtrace
       end
     end
+
+    def get_status(jid)
+      path = "job/#{jid}"
+      headers = Hash.new
+      response = @connection.get_request(nil, path, headers)
+
+      begin
+        response_parsed = XmlSimple.xml_in(response) if response
+        response_parsed
+      rescue StandardError => e
+        puts "Error parsing XML response for #{jid}"
+        puts e
+        puts e.backtrace
+      end
+    end
     
     def check_batch_status(batch_id)
       path = "job/#{@job_id}/batch/#{batch_id}"
@@ -138,6 +156,7 @@ module SalesforceBulkApi
     
     def get_job_result(return_result, timeout)
       # timeout is in seconds
+      puts "\n\nGet ob result called.\n\n"
       begin
         state = []
         Timeout::timeout(timeout, SalesforceBulkApi::JobTimeout) do
