@@ -48,9 +48,9 @@ module SalesforceBulkApi
       return job.get_batches_in_job(job_id)
     end
 
-    def get_batch_result_in_job(job_id, batch_id)
+    def get_batch_result_in_job(job_id, batch_id, query)
       job = SalesforceBulkApi::Job.new("NA", "NA", [], nil, @connection)
-      return job.get_batch_result_in_job(job_id, batch_id)
+      return job.get_batch_result_in_job(job_id, batch_id, query)
     end
    
     #private
